@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    container_name: contentful-pg 
+    ports:
+      - 5433:5432
+  # rabbitmq:
+  #   image: rabbitmq:3.9.20-management
+  #   container_name: rabbitmq
+  #   stdin_open: true  # docker run -i
+  #   tty: true         # docker run -t 
+  #   ports:
+  #     # - 15672:15672   # UI
+  #     - 5672:5672     # pub/sub
