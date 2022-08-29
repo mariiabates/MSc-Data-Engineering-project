@@ -1,18 +1,17 @@
-### The following module 
+### This module populates tables with data.
 # TODO: add screen of split distribution from notebook
 
 import os
 import pandas as pd
 from dotenv import dotenv_values
-from sqlalchemy import create_engine
 from helper_funcs import setup_logger, Postgres
 from sklearn.model_selection import train_test_split
 
 config = dotenv_values(".env")
-DATA_DIR = config.get('DATA_DIR')  #"./data"
-TRAIN_TABLE = config.get('TRAIN_TABLE_NAME')  #'training_data'
-TEST_TABLE = config.get('TEST_TABLE_NAME')  #'testing_data'
-CONNECTION_STRING = config.get('PG_CONNECTION_STRING')  #'postgresql://postgres:postgres@localhost:5433/postgres'
+DATA_DIR = config.get('DATA_DIR', "./data")
+TRAIN_TABLE = config.get('TRAIN_TABLE_NAME')
+TEST_TABLE = config.get('TEST_TABLE_NAME')
+CONNECTION_STRING = config.get('PG_CONNECTION_STRING')
 
 
 def get_label_and_text(path):

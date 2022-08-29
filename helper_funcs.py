@@ -2,6 +2,8 @@ import pika
 import logging
 from sqlalchemy import create_engine
 
+## LOGGER
+
 def setup_logger():
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger()
@@ -27,39 +29,42 @@ class Postgres:
     def get_cursor(self):
         return self.connection.connect()
 
-class RabbitMQ:
-    def __init__(self, host, exchange):
-        self.connection = self._setup_connection(host)
-        self.channel = self._setup_exchange(exchange)
 
-    def _setup_connection(self, host):
-        return pika.BlockingConnection(
+class RabbitMQ:
+    def __init__(self, host):
+        self.channel = self._setup_channel(host)
+
+    def _setup_channel(self, host):
+        connection = pika.BlockingConnection(
             pika.ConnectionParameters(host=host)
         )
-    def _setup_exchange(self, exchange):
-        channel = self.connection.channel()
-        channel.exchange_declare(exchange=exchange, exchange_type='fanout')
-        return channel
+        return connection.channel()
 
-    def send_to_exchange(self, exchange, body):
-        self.channel.basic_publish(exchange=exchange, routing_key='', body=body)
+    def ack(self, delivery_tag):
+        self.channel.basic_ack(delivery_tag=delivery_tag)
+
+    def setup_exchange(self, exchange, exchange_type):
+        self.channel.exchange_declare(exchange=exchange, exchange_type=exchange_type)
+
+    def send_to_exchange(self, exchange, body, routing_key=''):
+        self.channel.basic_publish(exchange=exchange, routing_key=routing_key, body=body)
         return f" [x] Sent {body}"
 
-    def setup_queue(self, queue, exchange):
+    def setup_queue(self, queue, exchange, routing_key=''):
         result = self.channel.queue_declare(queue=queue, exclusive=True)
         queue_name = result.method.queue
-        self.channel.queue_bind(exchange=exchange, queue=queue_name)  # attach to exchange
+        self.channel.queue_bind(exchange=exchange, routing_key=routing_key, queue=queue_name)  # attach to exchange
 
     def read_from_queue(self, queue, processing_func):
         self.channel.basic_consume(
-            queue=queue, on_message_callback=processing_func, auto_ack=True)
+            queue=queue, on_message_callback=processing_func)  #, auto_ack=True)
 
         self.channel.start_consuming()
 
         print("--FINISHED--")
 
     def close(self):
-        self.connection.close()
+        self.channel.close()
 
 ## MODEL TRAINING
 
