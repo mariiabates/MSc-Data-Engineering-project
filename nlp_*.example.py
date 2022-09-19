@@ -1,19 +1,22 @@
-### This module is a sentiment consumer of producer modules and a publisher to poster.py.
+### This module gives an outline to add another NLP model to the pipeline.
+# Follow TODO tags.
 
 from helper_funcs import setup_logger, RabbitMQ
-from textblob import TextBlob
 from dotenv import dotenv_values
 import pandas as pd
 from io import BytesIO
 import json
 
-
+### TODO: Add a QUEUE_NAME in .env to bind the model to the queue
+#
 config = dotenv_values(".env")
 RABBITMQ_HOST = config.get("RABBITMQ_HOST")
 EXCHANGE_NAME_CONSUME = config.get("NLP_EXCHANGE_NAME")
-QUEUE_NAME_CONSUME = config.get("QUEUE_NAME_SENTIMENT")
+QUEUE_NAME_CONSUME = config.get("QUEUE_NAME")  
 EXCHANGE_NAME_PUBLISH = config.get("POST_EXCHANGE_NAME")
 
+### TODO: Import a trained model HERE
+#
 
 def callback(ch, method, properties, body):
     ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -25,22 +28,26 @@ def callback(ch, method, properties, body):
         return
     source = source_lst[0]
 
-    df = pd.DataFrame.from_dict(body_dict)
+    df_to_process = pd.DataFrame.from_dict(body_dict)
+    df_to_process = df_to_process.set_index('id')
 
-    # df = pd.read_json(BytesIO(body), dtype={"text": "string",})
-    df = df.set_index('id')
-
-     # -- 2: predict label
-    trained_sentiment = TextBlob(df["text"].iloc[0]).sentiment
-    predicted_subj_score = round(trained_sentiment.subjectivity, 2)
+    # -- 2: preprocess and predict on the df_to_process
+    ### TODO: label_predicted = 
+    #
 
     # -- 3: post ID and label
-    json_dict = {"index": str(df.index[0]), "label_2": str(predicted_subj_score)}
-    json_obj = json.dumps(json_dict)
 
+    ### TODO: Give a proper LABEL_NAME
+    #
+    json_dict = {
+        "index": str(df_to_process.index[0]), 
+        "LABEL_NAME": str(label_predicted)
+    }
+    
+    json_obj = json.dumps(json_dict)
     rabbit_client.send_to_exchange(EXCHANGE_NAME_PUBLISH, json_obj, source)
 
-    logger.info(f" [x-2] {df.index[0], predicted_subj_score}")
+    logger.info(f" [x-2] {df_to_process.index[0], label_predicted}")
 
 
 if __name__ == '__main__':
@@ -53,5 +60,5 @@ if __name__ == '__main__':
     rabbit_client.setup_exchange(EXCHANGE_NAME_CONSUME, "fanout")  # creates if does not exist
     rabbit_client.setup_queue(queue=QUEUE_NAME_CONSUME, exchange=EXCHANGE_NAME_CONSUME)
 
-    logger.info(' [*] NLP_2 | Subjectivity Score | Waiting for articles | To exit press CTRL+C')
+    logger.info(' [*] Waiting for logs. To exit press CTRL+C')
     rabbit_client.read_from_queue(QUEUE_NAME_CONSUME, callback)

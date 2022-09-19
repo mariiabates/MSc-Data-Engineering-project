@@ -1,7 +1,3 @@
-# NOTE: pip install psycopg2 separately
-# psycopg2==2.9.3  # Intel
-# psycopg2-binary==2.9.3  # M1
-
 appnope==0.1.3
 asttokens==2.0.5
 backcall==0.2.0
@@ -40,6 +36,7 @@ pika==1.2.1
 prompt-toolkit==3.0.30
 protobuf==4.21.4
 psutil==5.9.1
+psycopg2-binary==2.9.3
 ptyprocess==0.7.0
 pure-eval==0.2.2
 Pygments==2.12.0
@@ -66,7 +63,6 @@ torch==1.12.0
 tornado==6.2
 tqdm==4.64.0
 traitlets==5.3.0
-transformers==4.20.1
 typing-extensions==4.3.0
 urllib3==1.26.11
 wcwidth==0.2.5

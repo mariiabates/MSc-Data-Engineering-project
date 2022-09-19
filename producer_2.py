@@ -13,12 +13,11 @@ RABBITMQ_HOST = config.get('RABBITMQ_HOST', 'localhost')
 NLP_EXCHANGE_NAME = config.get('NLP_EXCHANGE_NAME', 'NLP')
 CONNECTION_STRING = config.get('PG_CONNECTION_STRING')
 NEWS_API_KEY = config.get('NEWS_API_KEY')
-NEWSAPI = config.get('NEWSAPI_ROUTING_KEY')
+NEWSAPI = config.get('NEWSAPI_TARGET_TABLE')
 
 
 def get_data_api():
     api = NewsDataApiClient(apikey=NEWS_API_KEY)
-    # response = api.news_api(country="gb", language="en")
     response = api.news_api(language="en")
     articles = response.get("results")  # list of dicts
 
@@ -34,7 +33,6 @@ def get_data_api():
 
         num_words_in_content = len(content.split())
         if num_words_in_content < 100:  # no short articles
-            print(content)
             logger.info(f" [*] SKIP: article too short ({num_words_in_content} words)")
             continue
 
@@ -53,8 +51,6 @@ def get_data_api():
                 """)
             connection.execute(sql, id=id, content=content, category=category, keywords=keywords)
             logger.info(f" [*] ({id}) inserted into {NEWSAPI}")
-
-            # connection.execute(f"INSERT INTO news_db(id,category,keywords) VALUES('{id}', ARRAY {category}::text[], ARRAY {keywords}::text[]) ON CONFLICT (id) DO NOTHING;")
         
         # -- 3: return columns for training
         yield id, content
@@ -74,9 +70,8 @@ if __name__ == '__main__':
         
         json_obj = json.dumps(json_dict)
 
-        # if rabbit_client.connection.is_closed:
         status = rabbit_client.send_to_exchange(NLP_EXCHANGE_NAME, json_obj)
 
         logger.info(status)
 
-    # rabbit_client.close()
+    rabbit_client.close()

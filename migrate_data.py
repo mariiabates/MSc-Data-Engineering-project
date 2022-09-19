@@ -1,5 +1,4 @@
 ### This module populates tables with data.
-# TODO: add screen of split distribution from notebook
 
 import os
 import pandas as pd
@@ -9,8 +8,8 @@ from sklearn.model_selection import train_test_split
 
 config = dotenv_values(".env")
 DATA_DIR = config.get('DATA_DIR', "./data")
-TRAIN_TABLE = config.get('TRAIN_TABLE_NAME')
-TEST_TABLE = config.get('TEST_TABLE_NAME')
+TRAIN_TABLE = config.get('TRAIN_TABLE')
+BBC_SOURCE_TABLE = config.get('BBC_SOURCE_TABLE')
 CONNECTION_STRING = config.get('PG_CONNECTION_STRING')
 
 
@@ -39,7 +38,7 @@ if __name__ == '__main__':
     labeled_data_generator = get_label_and_text(DATA_DIR)
     raw_data_labeled = pd.DataFrame(
         labeled_data_generator, 
-        columns=["label_1", "text"],
+        columns=["label", "text"],
     )
     logger.info(f"Read {len(raw_data_labeled)} rows of data")  # 2225
 
@@ -47,7 +46,7 @@ if __name__ == '__main__':
     train_data, test_data = train_test_split(
         raw_data_labeled, 
         train_size=0.8, 
-        stratify=raw_data_labeled["label_1"], 
+        stratify=raw_data_labeled["label"], 
         random_state=777,
     )
 
@@ -60,6 +59,6 @@ if __name__ == '__main__':
     logger.info(f"Inserted {rows_inserted} rows of data into {TRAIN_TABLE}")  # 1780
 
     rows_inserted = pg.load_data(
-        df=test_data, table_name=f'{TEST_TABLE}', table_index="id"
+        df=test_data, table_name=f'{BBC_SOURCE_TABLE}', table_index="id"
     )
-    logger.info(f"Inserted {rows_inserted} rows of data into {TEST_TABLE}")  # 445
+    logger.info(f"Inserted {rows_inserted} rows of data into {BBC_SOURCE_TABLE}")  # 445
