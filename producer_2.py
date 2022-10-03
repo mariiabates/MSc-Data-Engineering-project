@@ -3,7 +3,7 @@
 import json
 from sqlalchemy import create_engine
 from sqlalchemy.sql import text
-from helper_funcs import setup_logger, RabbitMQ
+from helpers.helper_funcs import setup_logger, RabbitMQ
 from dotenv import dotenv_values
 from newsdataapi import NewsDataApiClient
 
@@ -15,11 +15,12 @@ CONNECTION_STRING = config.get('PG_CONNECTION_STRING')
 NEWS_API_KEY = config.get('NEWS_API_KEY')
 NEWSAPI = config.get('NEWSAPI_TARGET_TABLE')
 
+WORD_LEN_LIMIT = 332  # filter out shorter articles
 
 def get_data_api():
     api = NewsDataApiClient(apikey=NEWS_API_KEY)
     response = api.news_api(language="en")
-    articles = response.get("results")  # list of dicts
+    articles = response.get("results")
 
     pg_client = create_engine(CONNECTION_STRING)
 
@@ -27,12 +28,12 @@ def get_data_api():
         # -- 1: retrieve data
         content = article.get("content")
 
-        if content is None:  # no empty articles
-            logger.info(f" [*] SKIP: No article")
+        if content is None:
+            logger.info(f" [*] SKIP: no content")
             continue
 
         num_words_in_content = len(content.split())
-        if num_words_in_content < 100:  # no short articles
+        if num_words_in_content < WORD_LEN_LIMIT:
             logger.info(f" [*] SKIP: article too short ({num_words_in_content} words)")
             continue
 
@@ -60,7 +61,7 @@ if __name__ == '__main__':
     logger = setup_logger()
     rabbit_client = RabbitMQ(RABBITMQ_HOST)
     rabbit_client.setup_exchange(NLP_EXCHANGE_NAME, "fanout")
-    logger.info("Setup finished")
+    logger.info("News API | Setup finished")
 
     for id, content in get_data_api():
         json_dict = dict()
@@ -70,8 +71,8 @@ if __name__ == '__main__':
         
         json_obj = json.dumps(json_dict)
 
-        status = rabbit_client.send_to_exchange(NLP_EXCHANGE_NAME, json_obj)
+        rabbit_client.send_to_exchange(NLP_EXCHANGE_NAME, json_obj)
 
-        logger.info(status)
+        logger.info((f" [x] Sent {json_obj} to {NLP_EXCHANGE_NAME}"))
 
     rabbit_client.close()

@@ -5,8 +5,8 @@ from dotenv import dotenv_values
 import json
 import pandas as pd
 
-from helper_funcs import setup_logger, RabbitMQ
-from classifier_training import clean_text, train_model
+from helpers.helper_funcs import setup_logger, RabbitMQ
+from helpers.classifier_training import clean_text, train_model
 
 config = dotenv_values(".env")
 
@@ -42,12 +42,12 @@ def callback(ch, method, properties, body):
     predicted_class_name = CLASS_ENC.inverse_transform(predicted_class_label)[0]  # single element list
 
     # -- 4: post ID and label
-    json_dict = {"index": str(df.index[0]), "label_1": str(predicted_class_name)}
+    json_dict = {"id": str(df.index[0]), "label_1": str(predicted_class_name)}
     json_obj = json.dumps(json_dict)
 
-    status = rabbit_client.send_to_exchange(EXCHANGE_NAME_PUBLISH, json_obj, source)  # post NLP identifier too?
+    rabbit_client.send_to_exchange(EXCHANGE_NAME_PUBLISH, json_obj, source)
 
-    logger.info(f" [x-1] {df.index[0], predicted_class_name, status}")
+    logger.info(f" [x-1] Sent {json_obj} | {source} to {EXCHANGE_NAME_PUBLISH}")
 
 
 if __name__ == '__main__':
@@ -57,7 +57,7 @@ if __name__ == '__main__':
 
     rabbit_client.setup_exchange(EXCHANGE_NAME_PUBLISH, "direct")
 
-    rabbit_client.setup_exchange(EXCHANGE_NAME_CONSUME, "fanout")  # creates if does not exist
+    rabbit_client.setup_exchange(EXCHANGE_NAME_CONSUME, "fanout")
     rabbit_client.setup_queue(queue=QUEUE_NAME_CONSUME, exchange=EXCHANGE_NAME_CONSUME)
 
     logger.info(' [*] NLP_1 | Class Label | Waiting for articles | To exit press CTRL+C')

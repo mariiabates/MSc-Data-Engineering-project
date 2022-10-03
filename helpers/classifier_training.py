@@ -1,6 +1,7 @@
 ### This model provides training and pre-processing functions for nlp_1.
 
-from helper_funcs import setup_logger, Postgres
+from helpers.helper_funcs import setup_logger, Postgres
+from helpers.migrate_data import TRAIN_TABLE
 
 
 ## PRE-PROCESSING
@@ -43,6 +44,8 @@ from sklearn.pipeline import Pipeline
 from dotenv import dotenv_values
 import pandas as pd
 
+config = dotenv_values(".env")
+TRAIN_TABLE = config.get('TRAIN_TABLE')
 
 def train_model():
     logger = setup_logger()
@@ -50,7 +53,8 @@ def train_model():
     CONNECTION_STRING = config.get('PG_CONNECTION_STRING')
     cnx = Postgres(CONNECTION_STRING).get_cursor()
 
-    df_train = pd.read_sql_table('training_data', cnx)
+    df_train = pd.read_sql_table(f'{TRAIN_TABLE}', cnx)
+    cnx.close()
     df_train['text_clean'] = clean_text(df_train['text'])
     X_train = df_train["text_clean"]
     y_train = df_train["label"]
@@ -62,6 +66,6 @@ def train_model():
                 ('regression', LogisticRegression()),
                 ])
     classifier_pipe.fit(X_train,y_train)
-    logger.info("TRAINED")
+    logger.info("CLASSIFIER TRAINED")
 
     return classifier_pipe, class_encoder

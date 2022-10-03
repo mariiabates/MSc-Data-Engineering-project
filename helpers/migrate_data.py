@@ -3,7 +3,7 @@
 import os
 import pandas as pd
 from dotenv import dotenv_values
-from helper_funcs import setup_logger, Postgres
+from helpers.helper_funcs import setup_logger, Postgres
 from sklearn.model_selection import train_test_split
 
 config = dotenv_values(".env")
@@ -62,3 +62,5 @@ if __name__ == '__main__':
         df=test_data, table_name=f'{BBC_SOURCE_TABLE}', table_index="id"
     )
     logger.info(f"Inserted {rows_inserted} rows of data into {BBC_SOURCE_TABLE}")  # 445
+
+    pg.close()

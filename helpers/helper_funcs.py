@@ -1,6 +1,6 @@
-import pika
 import logging
 from sqlalchemy import create_engine
+import pika
 
 
 ## LOGGER
@@ -8,6 +8,7 @@ from sqlalchemy import create_engine
 def setup_logger():
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger()
+    logger.propagate = False
     return logger
 
 
@@ -15,10 +16,9 @@ def setup_logger():
 
 class Postgres:
     def __init__(self, host):
-        self.connection = self._setup_connection(host=host)
-
-    def _setup_connection(self, host):
-        return create_engine(host)
+        self.connection = None  # <sqlalchemy.engine.base.Engine>
+        if self.connection is None:
+            self.connection = create_engine(host)
 
     def load_data(self, df, table_name, table_index):
         rows_inserted = df.to_sql(
@@ -30,11 +30,20 @@ class Postgres:
         return rows_inserted
 
     def get_cursor(self):
-        return self.connection.connect()
+        return self.connection.connect()  # <sqlalchemy.engine.base.Connection>
+
+    def close(self):
+        self.connection.dispose()
 
 
 class RabbitMQ:
     def __init__(self, host):
+        # self.channel = None
+        # if self.channel is None:
+        #     connection = pika.BlockingConnection(
+        #         pika.ConnectionParameters(host=host)
+        #     )
+        #     self.channel = connection.channel()
         self.channel = self._setup_channel(host)
 
     def _setup_channel(self, host):
@@ -50,13 +59,16 @@ class RabbitMQ:
         self.channel.exchange_declare(exchange=exchange, exchange_type=exchange_type)
 
     def send_to_exchange(self, exchange, body, routing_key=''):
-        self.channel.basic_publish(exchange=exchange, routing_key=routing_key, body=body)
-        return f" [x] Sent {body}"
+        self.channel.basic_publish(
+            exchange=exchange, routing_key=routing_key, body=body
+        )
 
     def setup_queue(self, queue, exchange, routing_key=''):
         result = self.channel.queue_declare(queue=queue, exclusive=True)
         queue_name = result.method.queue
-        self.channel.queue_bind(exchange=exchange, routing_key=routing_key, queue=queue_name)  # attach to exchange
+        self.channel.queue_bind(
+            exchange=exchange, routing_key=routing_key, queue=queue_name
+        )
 
     def read_from_queue(self, queue, processing_func):
         self.channel.basic_consume(

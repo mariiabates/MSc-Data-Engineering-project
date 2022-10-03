@@ -1,7 +1,7 @@
 ### This module gives an outline to add another NLP model to the pipeline.
 # Follow TODO tags.
 
-from helper_funcs import setup_logger, RabbitMQ
+from poster.helper_funcs import setup_logger, RabbitMQ
 from dotenv import dotenv_values
 import pandas as pd
 from io import BytesIO

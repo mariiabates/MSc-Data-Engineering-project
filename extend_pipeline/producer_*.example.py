@@ -2,7 +2,7 @@
 
 import json
 from sqlalchemy import create_engine
-from helper_funcs import setup_logger, RabbitMQ
+from helpers.helper_funcs import setup_logger, RabbitMQ
 from dotenv import dotenv_values
 
 ### TODO: 

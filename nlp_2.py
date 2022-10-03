@@ -1,6 +1,6 @@
 ### This module is a sentiment consumer of producer modules and a publisher to poster.py.
 
-from helper_funcs import setup_logger, RabbitMQ
+from helpers.helper_funcs import setup_logger, RabbitMQ
 from textblob import TextBlob
 from dotenv import dotenv_values
 import pandas as pd
@@ -26,8 +26,6 @@ def callback(ch, method, properties, body):
     source = source_lst[0]
 
     df = pd.DataFrame.from_dict(body_dict)
-
-    # df = pd.read_json(BytesIO(body), dtype={"text": "string",})
     df = df.set_index('id')
 
      # -- 2: predict label
@@ -35,12 +33,12 @@ def callback(ch, method, properties, body):
     predicted_subj_score = round(trained_sentiment.subjectivity, 2)
 
     # -- 3: post ID and label
-    json_dict = {"index": str(df.index[0]), "label_2": str(predicted_subj_score)}
+    json_dict = {"id": str(df.index[0]), "label_2": str(predicted_subj_score)}
     json_obj = json.dumps(json_dict)
 
     rabbit_client.send_to_exchange(EXCHANGE_NAME_PUBLISH, json_obj, source)
 
-    logger.info(f" [x-2] {df.index[0], predicted_subj_score}")
+    logger.info(f" [x-2] Sent {json_obj} | {source} to {EXCHANGE_NAME_PUBLISH}")
 
 
 if __name__ == '__main__':
@@ -50,7 +48,7 @@ if __name__ == '__main__':
 
     rabbit_client.setup_exchange(EXCHANGE_NAME_PUBLISH, "direct")
 
-    rabbit_client.setup_exchange(EXCHANGE_NAME_CONSUME, "fanout")  # creates if does not exist
+    rabbit_client.setup_exchange(EXCHANGE_NAME_CONSUME, "fanout")
     rabbit_client.setup_queue(queue=QUEUE_NAME_CONSUME, exchange=EXCHANGE_NAME_CONSUME)
 
     logger.info(' [*] NLP_2 | Subjectivity Score | Waiting for articles | To exit press CTRL+C')
