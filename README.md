@@ -1,5 +1,22 @@
 # Real-time pipeline for several NLP modules 
 
+- [Design schemas](#design-schemas)  
+- [Instructions on running the pipeline](#instructions-on-running-the-pipeline)
+- [Extra](#extra)
+
+## Design schemas
+
+RabbitMQ architecture behind Python modules:  
+
+![RabbitMQ architecture behind python modules](img/arch_modularised.png)
+
+Data flow:  
+
+![Data flow](img/data_processing.png)
+
+Tables:  
+<img src="img/tables.png" alt="tables" width="400"/>
+
 ## Instructions on running the pipeline
 
 Pre-requisites:
